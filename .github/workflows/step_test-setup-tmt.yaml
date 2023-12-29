@@ -1,0 +1,27 @@
+on:
+  workflow_call:
+
+permissions: {}
+
+jobs:
+  smoke-test:
+    name: >
+      smoke-test
+      🐍 ${{ matrix.python || 'built-in' }}
+      ${{ matrix.container && format('({0})', matrix.container) }}
+      ${{ matrix.experimental && '[experimental]' }}
+    runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.experimental || false }}
+    container: ${{ matrix.container }}
+    strategy:
+      fail-fast: false
+      matrix:
+        container: ["", "fedora:latest"]
+        python: ["", "3.x"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+        if: matrix.python
+      - uses: ./setup-tmt
