@@ -17,8 +17,12 @@ concurrency:
 permissions: {}
 
 jobs:
+  pre-commit:
+    uses: ./.github/workflows/step_pre-commit.yaml
+
   pass:
     name: ✅ Pass
+    needs: [pre-commit]
     runs-on: ubuntu-latest
     steps:
       - name: Check all CI jobs
