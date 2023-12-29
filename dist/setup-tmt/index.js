@@ -9671,6 +9671,11 @@ exports.Tmt = void 0;
 const exec_1 = __nccwpck_require__(1514);
 const node_assert_1 = __importDefault(__nccwpck_require__(8061));
 class Tmt {
+    constructor(context) {
+        this.context = {};
+        if (context !== undefined)
+            this.context = context;
+    }
     install(version) {
         return __awaiter(this, void 0, void 0, function* () {
             // Do actual tmt install
@@ -9686,6 +9691,48 @@ class Tmt {
             (0, node_assert_1.default)(this._version !== undefined);
             return this._version;
         }))();
+    }
+    get context_args() {
+        let args = [];
+        for (const [key, val] of Object.entries(this.context))
+            args.push("--context", `${key}=${val}`);
+        return args;
+    }
+    plans_ls(root) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let base_args = this.context_args;
+            if (root)
+                base_args.push("--root", root);
+            return (0, exec_1.exec)("tmt", [...base_args, "plans", "ls"]);
+        });
+    }
+    plans_show(root) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let base_args = this.context_args;
+            if (root)
+                base_args.push("--root", root);
+            return (0, exec_1.exec)("tmt", [...base_args, "plans", "show"]);
+        });
+    }
+    plans_run(report_xml, root, debug) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let base_args = this.context_args;
+            if (root)
+                base_args.push("--root", root);
+            if (debug)
+                base_args.push("-dd");
+            // Must run as provision local
+            const provision_args = ["provision", "--update", "--how", "local"];
+            // Report is not parseable by default. Use JUnit output
+            const report_args = ["report", "--how", "junit", "--file", report_xml];
+            yield (0, exec_1.exec)("tmt", [
+                ...base_args,
+                "run",
+                "--all",
+                ...provision_args,
+                ...report_args,
+            ]);
+        });
     }
 }
 exports.Tmt = Tmt;

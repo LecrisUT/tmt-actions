@@ -1,0 +1,35 @@
+on:
+  workflow_call:
+
+permissions: {}
+
+jobs:
+  test-base:
+    name: >
+      test-base
+      🐍 ${{ matrix.python || 'built-in' }}
+      ${{ matrix.fedora-version && format('(fedora:{0})', matrix.fedora-version) }}
+      ${{ matrix.experimental && '[experimental]' }}
+    runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.experimental || false }}
+    container: ${{ matrix.fedora-version && format('fedora:{0}', matrix.fedora-version) }}
+    strategy:
+      fail-fast: false
+      matrix:
+        fedora-version: ["", "latest"]
+        python: ["", "3.x"]
+        include:
+          - fedora-version: ""
+            experimental: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+        if: matrix.python
+      - uses: ./setup-tmt
+      - name: Create minimal tmt setup
+        run: tmt init -t base
+      - uses: ./run-tmt
+        with:
+          report-artifact: tmt-test-${{ matrix.fedora-version }}-${{ matrix.python }}

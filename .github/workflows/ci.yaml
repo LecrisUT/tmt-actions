@@ -24,9 +24,13 @@ jobs:
     needs: [pre-commit]
     uses: ./.github/workflows/step_test-setup-tmt.yaml
 
+  run-tmt:
+    needs: [setup-tmt]
+    uses: ./.github/workflows/step_test-run-tmt.yaml
+
   pass:
     name: ✅ Pass
-    needs: [pre-commit, setup-tmt]
+    needs: [pre-commit, setup-tmt, run-tmt]
     runs-on: ubuntu-latest
     steps:
       - name: Check all CI jobs
