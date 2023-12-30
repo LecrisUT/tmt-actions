@@ -133,3 +133,7 @@ out
 .pnp.*
 
 ### Project specific
+
+# Ignore built ts files
+__tests__/runner/*
+lib/**/*.js
