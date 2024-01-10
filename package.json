@@ -34,7 +34,7 @@
 		"@nexssp/os": "github:LecrisUT/os"
 	},
 	"devDependencies": {
-		"@types/eslint": "^8.56.0",
+		"@types/eslint": "^8.56.1",
 		"@types/js-yaml": "^4.0.9",
 		"@types/lint-staged": "^13.3.0",
 		"@types/node": "^20.10.5",
