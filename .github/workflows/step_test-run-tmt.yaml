@@ -28,8 +28,7 @@ jobs:
           python-version: ${{ matrix.python }}
         if: matrix.python
       - uses: ./setup-tmt
-      - name: Create minimal tmt setup
-        run: tmt init -t base
       - uses: ./run-tmt
         with:
+          root: ./.github/test_data/simple
           report-artifact: tmt-test-${{ matrix.fedora-version }}-${{ matrix.python }}
