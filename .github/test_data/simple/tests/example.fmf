@@ -1,0 +1,3 @@
+summary: Basic test with no dependency
+framework: shell
+test: tmt --version

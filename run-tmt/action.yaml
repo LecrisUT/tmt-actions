@@ -1,0 +1,19 @@
+name: Run tmt
+description: Action that runs tmt
+inputs:
+  root:
+    description: Path to the tmt root
+    required: false
+  report-xml:
+    description: JUnit report xml
+    default: report.xml
+  report-artifact:
+    description: Artifact name to upload
+    default: tmt-result
+  context:
+    description: >
+      Additional context to pass to tmt. Must be a JSON dict encoded as a string
+    default: "{}"
+runs:
+  using: node20
+  main: ../dist/run-tmt/index.js
