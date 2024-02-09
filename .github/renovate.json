@@ -13,7 +13,11 @@
 		{
 			"groupName": "RuntimeDependencies",
 			"matchDepTypes": ["dependencies"],
-			"matchManagers": ["npm"]
+			"matchManagers": ["npm"],
+			"postUpgradeTasks": {
+				"commands": ["npm run build", "npm run package"],
+				"fileFilters": ["dist/**"]
+			}
 		}
 	],
 	"separateMajorMinor": false,
