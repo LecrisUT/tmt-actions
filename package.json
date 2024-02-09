@@ -4,7 +4,7 @@
 	"description": "GitHub Actions for running tmt",
 	"main": "lib/actions/main.js",
 	"scripts": {
-		"prepare": "husky install",
+		"prepare": "husky",
 		"build": "tsc",
 		"format": "prettier --write '**/*.ts'",
 		"format-check": "prettier --check '**/*.ts'",
