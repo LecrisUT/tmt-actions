@@ -4,9 +4,9 @@ on:
 permissions: {}
 
 jobs:
-  test-base:
+  simple:
     name: >
-      test-base
+      simple
       🐍 ${{ matrix.python || 'built-in' }}
       ${{ matrix.fedora-version && format('(fedora:{0})', matrix.fedora-version) }}
       ${{ matrix.experimental && '[experimental]' }}
@@ -29,6 +29,110 @@ jobs:
         if: matrix.python
       - uses: ./setup-tmt
       - uses: ./run-tmt
+        id: tmt-run
         with:
           root: ./.github/test_data/simple
-          report-artifact: tmt-test-${{ matrix.fedora-version }}-${{ matrix.python }}
+          report-artifact: tmt-simple-${{ matrix.fedora-version }}-${{ matrix.python }}
+      - uses: LIT-Protocol/artifact-exists-action@v0
+        id: check-artifact
+        with:
+          name: tmt-simple-${{ matrix.fedora-version }}-${{ matrix.python }}
+      - name: Check Results
+        run: |
+          if [[ ${{ steps.tmt-run.outcome }} != "success" ]]; then
+            echo "::error ::Expected tests failure, instead got ${{ steps.tmt-run.outcome }}"
+            exit 1
+          fi
+          if [[ ${{ steps.check-artifact.outputs.exists }} == "false" ]]; then
+            echo "::error ::Missing test artifacts"
+            exit 1
+          fi
+  failed:
+    name: >
+      failed
+      🐍 ${{ matrix.python || 'built-in' }}
+      ${{ matrix.fedora-version && format('(fedora:{0})', matrix.fedora-version) }}
+      ${{ matrix.experimental && '[experimental]' }}
+    runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.experimental || false }}
+    container: ${{ matrix.fedora-version && format('fedora:{0}', matrix.fedora-version) }}
+    strategy:
+      fail-fast: false
+      matrix:
+        fedora-version: ["", "latest"]
+        python: ["", "3.x"]
+        include:
+          - fedora-version: ""
+            experimental: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+        if: matrix.python
+      - uses: ./setup-tmt
+      - uses: ./run-tmt
+        id: tmt-run
+        with:
+          root: ./.github/test_data/failed
+          report-artifact: tmt-failed-${{ matrix.fedora-version }}-${{ matrix.python }}
+        continue-on-error: true
+      - uses: LIT-Protocol/artifact-exists-action@v0
+        id: check-artifact
+        with:
+          name: tmt-failed-${{ matrix.fedora-version }}-${{ matrix.python }}
+      - name: Check Results
+        run: |
+          if [[ ${{ steps.tmt-run.outcome }} != "failure" ]]; then
+            echo "::error ::Expected tests failure, instead got ${{ steps.tmt-run.outcome }}"
+            exit 1
+          fi
+          if [[ ${{ steps.check-artifact.outputs.exists }} == "false" ]]; then
+            echo "::error ::Missing test artifacts"
+            exit 1
+          fi
+  warning:
+    name: >
+      warning
+      🐍 ${{ matrix.python || 'built-in' }}
+      ${{ matrix.fedora-version && format('(fedora:{0})', matrix.fedora-version) }}
+      ${{ matrix.experimental && '[experimental]' }}
+    runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.experimental || false }}
+    container: ${{ matrix.fedora-version && format('fedora:{0}', matrix.fedora-version) }}
+    strategy:
+      fail-fast: false
+      matrix:
+        fedora-version: ["", "latest"]
+        python: ["", "3.x"]
+        include:
+          - fedora-version: ""
+            experimental: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+        if: matrix.python
+      - uses: ./setup-tmt
+      - uses: ./run-tmt
+        id: tmt-run
+        with:
+          root: ./.github/test_data/warning
+          report-artifact: tmt-warning-${{ matrix.fedora-version }}-${{ matrix.python }}
+        # TODO: Normally this should not error, but need to process tmt output better
+        continue-on-error: true
+      - uses: LIT-Protocol/artifact-exists-action@v0
+        id: check-artifact
+        with:
+          name: tmt-warning-${{ matrix.fedora-version }}-${{ matrix.python }}
+      - name: Check Results
+        run: |
+          if [[ ${{ steps.tmt-run.outcome }} != "failure" ]]; then
+            echo "::error ::Expected tests failure, instead got ${{ steps.tmt-run.outcome }}"
+            exit 1
+          fi
+          if [[ ${{ steps.check-artifact.outputs.exists }} == "false" ]]; then
+            echo "::error ::Missing test artifacts"
+            exit 1
+          fi
