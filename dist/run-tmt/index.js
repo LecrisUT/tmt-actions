@@ -103102,6 +103102,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Tmt = void 0;
 const exec_1 = __nccwpck_require__(1514);
 const node_assert_1 = __importDefault(__nccwpck_require__(8061));
+const core_1 = __nccwpck_require__(2186);
 class Tmt {
     constructor(context) {
         this.context = {};
@@ -103157,13 +103158,29 @@ class Tmt {
             const provision_args = ["provision", "--update", "--how", "local"];
             // Report is not parseable by default. Use JUnit output
             const report_args = ["report", "--how", "junit", "--file", report_xml];
-            yield (0, exec_1.exec)("tmt", [
-                ...base_args,
-                "run",
-                "--all",
-                ...provision_args,
-                ...report_args,
-            ]);
+            yield (0, exec_1.exec)("tmt", [...base_args, "run", "--all", ...provision_args, ...report_args], { ignoreReturnCode: true }).then((exit_code) => {
+                switch (exit_code) {
+                    case 0:
+                        // Everything ran successfully. No need to do anything
+                        break;
+                    case 1:
+                        // There was a failed or warning test. Report appropriate warning/error
+                        // TODO: Properly output warning and failed test counts
+                        (0, core_1.setFailed)("Tmt tests failed or raised a warning");
+                        break;
+                    case 2:
+                        (0, core_1.setFailed)("Tmt execution encountered an error");
+                        break;
+                    case 3:
+                        (0, core_1.warning)("No test results found");
+                        break;
+                    case 4:
+                        (0, core_1.notice)("All tmt tests were skipped");
+                        break;
+                    default:
+                        (0, core_1.setFailed)(`Tmt returned with unknown exit code: ${exit_code}`);
+                }
+            });
         });
     }
 }

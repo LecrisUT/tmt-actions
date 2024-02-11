@@ -1,0 +1,4 @@
+summary: Basic test with no dependency
+framework: shell
+test: echo "Dummy test"
+result: fail
