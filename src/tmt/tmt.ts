@@ -1,9 +1,11 @@
 import { exec, getExecOutput } from "@actions/exec"
 import assert from "node:assert"
+import { error, notice, setFailed, warning } from "@actions/core"
 
 class Tmt {
 	_version?: string
 	context: { [key: string]: string } = {}
+
 	constructor(context?: { [key: string]: string }) {
 		if (context !== undefined) this.context = context
 	}
@@ -52,13 +54,33 @@ class Tmt {
 		const provision_args = ["provision", "--update", "--how", "local"]
 		// Report is not parseable by default. Use JUnit output
 		const report_args = ["report", "--how", "junit", "--file", report_xml]
-		await exec("tmt", [
-			...base_args,
-			"run",
-			"--all",
-			...provision_args,
-			...report_args,
-		])
+		await exec(
+			"tmt",
+			[...base_args, "run", "--all", ...provision_args, ...report_args],
+			{ ignoreReturnCode: true },
+		).then((exit_code) => {
+			switch (exit_code) {
+				case 0:
+					// Everything ran successfully. No need to do anything
+					break
+				case 1:
+					// There was a failed or warning test. Report appropriate warning/error
+					// TODO: Properly output warning and failed test counts
+					setFailed("Tmt tests failed or raised a warning")
+					break
+				case 2:
+					setFailed("Tmt execution encountered an error")
+					break
+				case 3:
+					warning("No test results found")
+					break
+				case 4:
+					notice("All tmt tests were skipped")
+					break
+				default:
+					setFailed(`Tmt returned with unknown exit code: ${exit_code}`)
+			}
+		})
 	}
 }
 
