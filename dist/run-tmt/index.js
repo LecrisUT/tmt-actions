@@ -2328,6 +2328,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.downloadArtifactInternal = exports.downloadArtifactPublic = exports.streamExtractExternal = void 0;
 const promises_1 = __importDefault(__nccwpck_require__(3292));
+const stream = __importStar(__nccwpck_require__(2781));
+const fs_1 = __nccwpck_require__(7147);
+const path = __importStar(__nccwpck_require__(1017));
 const github = __importStar(__nccwpck_require__(5438));
 const core = __importStar(__nccwpck_require__(2186));
 const httpClient = __importStar(__nccwpck_require__(6255));
@@ -2368,6 +2371,9 @@ function streamExtract(url, directory) {
                 return;
             }
             catch (error) {
+                if (error.message.includes('Malformed extraction path')) {
+                    throw new Error(`Artifact download failed with unretryable error: ${error.message}`);
+                }
                 retryCount++;
                 core.debug(`Failed to download artifact after ${retryCount} retries due to ${error.message}. Retrying in 5 seconds...`);
                 // wait 5 seconds before retrying
@@ -2390,6 +2396,8 @@ function streamExtractExternal(url, directory) {
                 response.message.destroy(new Error(`Blob storage chunk did not respond in ${timeout}ms`));
             };
             const timer = setTimeout(timerFn, timeout);
+            const createdDirectories = new Set();
+            createdDirectories.add(directory);
             response.message
                 .on('data', () => {
                 timer.refresh();
@@ -2399,11 +2407,47 @@ function streamExtractExternal(url, directory) {
                 clearTimeout(timer);
                 reject(error);
             })
-                .pipe(unzip_stream_1.default.Extract({ path: directory }))
-                .on('close', () => {
+                .pipe(unzip_stream_1.default.Parse())
+                .pipe(new stream.Transform({
+                objectMode: true,
+                transform: (entry, _, callback) => __awaiter(this, void 0, void 0, function* () {
+                    const fullPath = path.normalize(path.join(directory, entry.path));
+                    if (!directory.endsWith(path.sep)) {
+                        directory += path.sep;
+                    }
+                    if (!fullPath.startsWith(directory)) {
+                        reject(new Error(`Malformed extraction path: ${fullPath}`));
+                    }
+                    if (entry.type === 'Directory') {
+                        if (!createdDirectories.has(fullPath)) {
+                            createdDirectories.add(fullPath);
+                            yield resolveOrCreateDirectory(fullPath).then(() => {
+                                entry.autodrain();
+                                callback();
+                            });
+                        }
+                        else {
+                            entry.autodrain();
+                            callback();
+                        }
+                    }
+                    else {
+                        core.info(`Extracting artifact entry: ${fullPath}`);
+                        if (!createdDirectories.has(path.dirname(fullPath))) {
+                            createdDirectories.add(path.dirname(fullPath));
+                            yield resolveOrCreateDirectory(path.dirname(fullPath));
+                        }
+                        const writeStream = (0, fs_1.createWriteStream)(fullPath);
+                        writeStream.on('finish', callback);
+                        writeStream.on('error', reject);
+                        entry.pipe(writeStream);
+                    }
+                })
+            }))
+                .on('finish', () => __awaiter(this, void 0, void 0, function* () {
                 clearTimeout(timer);
                 resolve();
-            })
+            }))
                 .on('error', (error) => {
                 reject(error);
             });
@@ -103377,7 +103421,7 @@ module.exports = require("zlib");
 /***/ ((module) => {
 
 "use strict";
-module.exports = JSON.parse('{"name":"@actions/artifact","version":"2.1.1","preview":true,"description":"Actions artifact lib","keywords":["github","actions","artifact"],"homepage":"https://github.com/actions/toolkit/tree/main/packages/artifact","license":"MIT","main":"lib/artifact.js","types":"lib/artifact.d.ts","directories":{"lib":"lib","test":"__tests__"},"files":["lib","!.DS_Store"],"publishConfig":{"access":"public"},"repository":{"type":"git","url":"git+https://github.com/actions/toolkit.git","directory":"packages/artifact"},"scripts":{"audit-moderate":"npm install && npm audit --json --audit-level=moderate > audit.json","test":"cd ../../ && npm run test ./packages/artifact","bootstrap":"cd ../../ && npm run bootstrap","tsc-run":"tsc","tsc":"npm run bootstrap && npm run tsc-run","gen:docs":"typedoc --plugin typedoc-plugin-markdown --out docs/generated src/artifact.ts --githubPages false --readme none"},"bugs":{"url":"https://github.com/actions/toolkit/issues"},"dependencies":{"@actions/core":"^1.10.0","@actions/github":"^5.1.1","@actions/http-client":"^2.1.0","@azure/storage-blob":"^12.15.0","@octokit/core":"^3.5.1","@octokit/plugin-request-log":"^1.0.4","@octokit/plugin-retry":"^3.0.9","@octokit/request-error":"^5.0.0","@protobuf-ts/plugin":"^2.2.3-alpha.1","archiver":"^5.3.1","crypto":"^1.0.1","jwt-decode":"^3.1.2","twirp-ts":"^2.5.0","unzip-stream":"^0.3.1"},"devDependencies":{"@types/archiver":"^5.3.2","@types/unzip-stream":"^0.3.4","typedoc":"^0.25.4","typedoc-plugin-markdown":"^3.17.1","typescript":"^5.2.2"}}');
+module.exports = JSON.parse('{"name":"@actions/artifact","version":"2.1.4","preview":true,"description":"Actions artifact lib","keywords":["github","actions","artifact"],"homepage":"https://github.com/actions/toolkit/tree/main/packages/artifact","license":"MIT","main":"lib/artifact.js","types":"lib/artifact.d.ts","directories":{"lib":"lib","test":"__tests__"},"files":["lib","!.DS_Store"],"publishConfig":{"access":"public"},"repository":{"type":"git","url":"git+https://github.com/actions/toolkit.git","directory":"packages/artifact"},"scripts":{"audit-moderate":"npm install && npm audit --json --audit-level=moderate > audit.json","test":"cd ../../ && npm run test ./packages/artifact","bootstrap":"cd ../../ && npm run bootstrap","tsc-run":"tsc","tsc":"npm run bootstrap && npm run tsc-run","gen:docs":"typedoc --plugin typedoc-plugin-markdown --out docs/generated src/artifact.ts --githubPages false --readme none"},"bugs":{"url":"https://github.com/actions/toolkit/issues"},"dependencies":{"@actions/core":"^1.10.0","@actions/github":"^5.1.1","@actions/http-client":"^2.1.0","@azure/storage-blob":"^12.15.0","@octokit/core":"^3.5.1","@octokit/plugin-request-log":"^1.0.4","@octokit/plugin-retry":"^3.0.9","@octokit/request-error":"^5.0.0","@protobuf-ts/plugin":"^2.2.3-alpha.1","archiver":"^5.3.1","crypto":"^1.0.1","jwt-decode":"^3.1.2","twirp-ts":"^2.5.0","unzip-stream":"^0.3.1"},"devDependencies":{"@types/archiver":"^5.3.2","@types/unzip-stream":"^0.3.4","typedoc":"^0.25.4","typedoc-plugin-markdown":"^3.17.1","typescript":"^5.2.2"}}');
 
 /***/ }),
 

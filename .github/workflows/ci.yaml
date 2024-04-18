@@ -18,6 +18,10 @@ permissions: {}
 
 jobs:
   pre-commit:
+    permissions:
+      # for check-dist
+      contents: write
+      actions: write
     uses: ./.github/workflows/step_pre-commit.yaml
 
   setup-tmt:
