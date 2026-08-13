@@ -10,8 +10,8 @@ jobs:
     name: pre-commit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: 3.x
       - uses: pre-commit/action@v3.0.1
@@ -19,11 +19,11 @@ jobs:
   husky:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           cache: npm
-          node-version: 20
+          node-version: 24
       - run: npm ci
       - name: Run npm style-checks
         run: |
@@ -33,11 +33,11 @@ jobs:
   check-dist:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           cache: npm
-          node-version: 20
+          node-version: 24
       - run: npm ci
       - name: Rebuild the dist/ directory
         run: |
@@ -57,7 +57,7 @@ jobs:
 
       - if: ${{ failure() && steps.diff.outcome == 'failure' }}
         name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist/
